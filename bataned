@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Check if target file is provided
+if [ -z "$1" ]; then
+  echo "Usage: $0 <target_file>"
+  exit 1
+fi
+
+TARGET_FILE=$1
+OUTPUT_FILE="bataned_output.txt"
+
+# Clear output file if it exists
+> $OUTPUT_FILE
+
+# Function to check if a tool is installed
+check_command() {
+  if ! command -v $1 &> /dev/null
+  then
+      echo "$1 could not be found. Please install $1."
+      exit 1
+  fi
+}
+
+# Check if Katana and Gau are installed
+check_command katana
+check_command gau
+
+# Run Katana and Gau for each domain in the file
+while read -r domain; do
+  echo "[*] Running Katana for $domain..."
+  katana -u "$domain" -o temp_katana_output.txt
+  cat temp_katana_output.txt >> $OUTPUT_FILE
+
+  echo "[*] Running Gau for $domain..."
+  gau "$domain" > temp_gau_output.txt
+  cat temp_gau_output.txt >> $OUTPUT_FILE
+
+done < "$TARGET_FILE"
+
+# Remove duplicate URLs
+sort -u $OUTPUT_FILE -o $OUTPUT_FILE
+echo "[*] Combined and deduplicated URLs saved to $OUTPUT_FILE"
+
+# Optional: Remove the temporary files
+rm temp_katana_output.txt temp_gau_output.txt
+
+# Final message
+echo "[*] Bataned completed successfully. Final output saved in $OUTPUT_FILE"
+
+exit 0
